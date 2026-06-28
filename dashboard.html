@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redrob — Candidate Ranking Dashboard</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root {
+  --bg:       #070710;
+  --surface:  #0f0f1a;
+  --surface2: #161625;
+  --border:   #1e1e30;
+  --border2:  #2a2a40;
+  --text:     #e2e2f0;
+  --muted:    #6b6b88;
+  --faint:    #3a3a55;
+  --accent:   #5b5bff;
+  --accent2:  #9b5cf6;
+  --green:    #34d399;
+  --yellow:   #fbbf24;
+  --red:      #f87171;
+  --mono:     'JetBrains Mono', monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ── Layout ── */
+.shell { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 28px 32px;
+  overflow-x: hidden;
+}
+
+/* ── Sidebar ── */
+.logo {
+  padding: 0 20px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-mark {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #ff4040;
+}
+.logo-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.nav-section {
+  padding: 16px 20px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--faint);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: all 0.15s;
+}
+.nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+.nav-item.active {
+  color: var(--text);
+  border-left-color: var(--accent);
+  background: rgba(91,91,255,0.07);
+}
+.nav-item .icon { width: 16px; text-align: center; }
+
+.sidebar-stats {
+  margin-top: auto;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+}
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.stat-row span:last-child {
+  font-family: var(--mono);
+  color: var(--text);
+}
+
+/* ── Page header ── */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.page-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.header-badge {
+  background: rgba(91,91,255,0.12);
+  border: 1px solid rgba(91,91,255,0.3);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: #9090ff;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ── Metrics row ── */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.metric {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  transition: border-color 0.2s;
+}
+.metric:hover { border-color: var(--border2); }
+.metric-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.metric-val {
+  font-size: 26px;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: var(--text);
+  line-height: 1;
+}
+.metric-sub {
+  font-size: 11px;
+  color: var(--faint);
+  margin-top: 4px;
+}
+.metric.accent .metric-val { color: var(--accent); }
+.metric.green .metric-val { color: var(--green); }
+.metric.yellow .metric-val { color: var(--yellow); }
+.metric.red .metric-val { color: var(--red); }
+
+/* ── Tabs ── */
+.tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 20px;
+  width: fit-content;
+}
+.tab {
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+.tab:hover { color: var(--text); }
+.tab.active {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border2);
+}
+
+/* ── Search / filter bar ── */
+.filter-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.search-wrap {
+  position: relative;
+  flex: 1;
+  max-width: 380px;
+}
+.search-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 14px;
+  pointer-events: none;
+}
+.search-input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 8px 12px 8px 34px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.search-input:focus { border-color: var(--accent); }
+.search-input::placeholder { color: var(--faint); }
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.filter-btn:hover { border-color: var(--border2); color: var(--text); }
+.filter-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(91,91,255,0.08); }
+
+.result-count {
+  font-size: 12px;
+  color: var(--faint);
+  margin-left: auto;
+}
+
+/* ── Candidate card ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: 0 14px;
+  align-items: start;
+}
+.card:hover { border-color: var(--accent); background: rgba(91,91,255,0.03); }
+.card.expanded { border-color: var(--border2); background: var(--surface2); }
+
+.rank-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding-top: 2px;
+}
+.rank-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+}
+.rank-bar-wrap {
+  width: 4px;
+  height: 36px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.rank-bar-fill {
+  width: 100%;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--accent), var(--accent2));
+  transition: height 0.4s ease;
+}
+
+.card-body { min-width: 0; }
+.card-row1 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 3px;
+  flex-wrap: wrap;
+}
+.card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.card-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+.card-company {
+  font-size: 12px;
+  color: var(--faint);
+}
+.skills-row {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin: 6px 0;
+}
+.skill-tag {
+  background: rgba(91,91,255,0.08);
+  border: 1px solid rgba(91,91,255,0.18);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 11px;
+  color: #8888cc;
+  white-space: nowrap;
+}
+.skill-tag.match {
+  background: rgba(52,211,153,0.08);
+  border-color: rgba(52,211,153,0.2);
+  color: var(--green);
+}
+
+.score-bar-wrap {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 6px 0 4px;
+}
+.score-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+
+.reasoning-text {
+  font-size: 11.5px;
+  color: var(--faint);
+  line-height: 1.5;
+  margin-top: 2px;
+}
+
+/* Component breakdown (expanded) */
+.component-breakdown {
+  display: none;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  grid-column: 1 / -1;
+}
+.card.expanded .component-breakdown { display: block; }
+.comp-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+.comp-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 10px 12px;
+}
+.comp-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+  margin-bottom: 4px;
+}
+.comp-val {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 500;
+}
+.comp-weight {
+  font-size: 10px;
+  color: var(--faint);
+  margin-top: 1px;
+}
+.comp-bar {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+.comp-bar-fill { height: 100%; border-radius: 2px; }
+
+/* Score badge */
+.score-badge {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.badge-high { background: rgba(52,211,153,0.12); color: var(--green); border: 1px solid rgba(52,211,153,0.25); }
+.badge-mid  { background: rgba(251,191,36,0.1);  color: var(--yellow); border: 1px solid rgba(251,191,36,0.25); }
+.badge-low  { background: rgba(248,113,113,0.1); color: var(--red);    border: 1px solid rgba(248,113,113,0.25); }
+
+.signal-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.signal {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--faint);
+}
+.signal-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+.signal-dot.green { background: var(--green); }
+.signal-dot.yellow { background: var(--yellow); }
+.signal-dot.red { background: var(--red); }
+
+/* ── Analytics pane ── */
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+.chart-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 80px;
+}
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  height: 100%;
+}
+.bar {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, var(--accent), var(--accent2));
+  transition: opacity 0.15s;
+  min-height: 2px;
+}
+.bar:hover { opacity: 0.7; }
+.bar-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--faint);
+  transform: rotate(-30deg);
+  white-space: nowrap;
+}
+
+.h-bar-chart { display: flex; flex-direction: column; gap: 6px; }
+.h-bar-row { display: flex; align-items: center; gap: 8px; }
+.h-bar-label { font-size: 11px; color: var(--muted); width: 110px; flex-shrink: 0; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.h-bar-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.h-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+.h-bar-val { font-family: var(--mono); font-size: 11px; color: var(--faint); width: 32px; text-align: right; }
+
+/* ── Tab panes ── */
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* ── Export pane ── */
+.export-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+}
+.export-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.export-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 18px;
+  border-radius: 7px;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+.export-btn:hover { opacity: 0.85; }
+.export-btn.secondary {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border2);
+}
+.code-block {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 12px 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--green);
+  margin-top: 10px;
+}
+
+/* ── Honeypot callout ── */
+.hp-callout {
+  background: rgba(248,113,113,0.06);
+  border: 1px solid rgba(248,113,113,0.2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--red);
+}
+
+/* Responsive tweaks */
+@media(max-width:900px){
+  .metrics { grid-template-columns: repeat(3,1fr); }
+  .comp-grid { grid-template-columns: repeat(3,1fr); }
+  .analytics-grid { grid-template-columns: 1fr; }
+}
+@media(max-width:700px){
+  .shell { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; padding: 12px; }
+  .main { padding: 16px; }
+  .metrics { grid-template-columns: repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+<!-- ── SIDEBAR ── -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">🔴 redrob</div>
+    <div class="logo-sub">Candidate Intelligence</div>
+  </div>
+
+  <div class="nav-section">Role</div>
+  <div class="nav-item active">
+    <span class="icon">⚡</span> Senior AI Engineer
+  </div>
+
+  <div class="nav-section">Views</div>
+  <div class="nav-item active" onclick="showTab('rankings',this)">
+    <span class="icon">🏆</span> Rankings
+  </div>
+  <div class="nav-item" onclick="showTab('analytics',this)">
+    <span class="icon">📊</span> Analytics
+  </div>
+  <div class="nav-item" onclick="showTab('export',this)">
+    <span class="icon">📥</span> Export
+  </div>
+
+  <div class="nav-section">Scoring</div>
+  <div style="padding:0 20px;">
+    <div style="font-size:11px;color:var(--faint);line-height:1.8;">
+      Skills <span style="color:var(--accent);font-family:var(--mono)">35%</span><br>
+      Career <span style="color:#9b5cf6;font-family:var(--mono)">25%</span><br>
+      Experience <span style="color:#06b6d4;font-family:var(--mono)">20%</span><br>
+      Location <span style="color:#10b981;font-family:var(--mono)">10%</span><br>
+      Education <span style="color:#f59e0b;font-family:var(--mono)">10%</span><br>
+      × Behavioral
+    </div>
+  </div>
+
+  <div class="sidebar-stats">
+    <div class="stat-row"><span>Sample pool</span><span>50</span></div>
+    <div class="stat-row"><span>Ranked</span><span>30</span></div>
+    <div class="stat-row"><span>Honeypots</span><span>0</span></div>
+    <div class="stat-row"><span>Top score</span><span>0.633</span></div>
+    <div class="stat-row"><span>Built for</span><span>100K</span></div>
+  </div>
+</nav>
+
+<!-- ── MAIN ── -->
+<main class="main">
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">Candidate Rankings</div>
+      <div class="page-sub">Senior AI Engineer · Redrob AI · Pune / Noida · 5–9yr</div>
+    </div>
+    <div class="header-badge">Sample: 50 candidates</div>
+  </div>
+
+  <!-- METRICS -->
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">Candidates scored</div>
+      <div class="metric-val">50</div>
+      <div class="metric-sub">from sample pool</div>
+    </div>
+    <div class="metric accent">
+      <div class="metric-label">Top score</div>
+      <div class="metric-val">0.633</div>
+      <div class="metric-sub">CAND_0000031</div>
+    </div>
+    <div class="metric green">
+      <div class="metric-label">Showing</div>
+      <div class="metric-val">30</div>
+      <div class="metric-sub">ranked candidates</div>
+    </div>
+    <div class="metric yellow">
+      <div class="metric-label">Avg score</div>
+      <div class="metric-val">0.319</div>
+      <div class="metric-sub">top 30</div>
+    </div>
+    <div class="metric red">
+      <div class="metric-label">Honeypots</div>
+      <div class="metric-val">0</div>
+      <div class="metric-sub">detected & zeroed</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('rankings',this)">🏆 Rankings</div>
+    <div class="tab" onclick="switchTab('analytics',this)">📊 Analytics</div>
+    <div class="tab" onclick="switchTab('export',this)">📥 Export</div>
+  </div>
+
+  <!-- ── RANKINGS PANE ── -->
+  <div id="pane-rankings" class="tab-pane active">
+
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" type="text" placeholder="Filter by title, company, skill…" oninput="filterCards(this.value)">
+      </div>
+      <button class="filter-btn" onclick="toggleFilter('open')" id="btn-open">🟢 Open to work</button>
+      <button class="filter-btn" onclick="toggleFilter('india')" id="btn-india">🇮🇳 India only</button>
+      <span class="result-count" id="result-count">30 candidates</span>
+    </div>
+
+    <div id="card-list"></div>
+  </div>
+
+  <!-- ── ANALYTICS PANE ── -->
+  <div id="pane-analytics" class="tab-pane">
+    <div class="analytics-grid">
+
+      <div class="chart-card">
+        <div class="chart-title">Score Distribution</div>
+        <div class="bar-chart" id="score-dist-chart"></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Top Companies</div>
+        <div class="h-bar-chart" id="company-chart"></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Component Score Averages</div>
+        <div class="h-bar-chart" id="component-chart"></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Notice Period Breakdown</div>
+        <div class="bar-chart" id="notice-chart"></div>
+      </div>
+
+      <div class="chart-card" style="grid-column:1/-1;">
+        <div class="chart-title">Open to Work · India vs Abroad</div>
+        <div class="bar-chart" id="otw-chart"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── EXPORT PANE ── -->
+  <div id="pane-export" class="tab-pane">
+    <div class="export-section">
+      <div class="export-title">submission.csv</div>
+      <div class="export-sub">Download the top-100 submission file in the required format.</div>
+      <button class="export-btn" onclick="downloadCSV()">⬇ Download submission.csv</button>
+    </div>
+
+    <div class="export-section">
+      <div class="export-title">Run the ranker</div>
+      <div class="export-sub">Execute <code>rank.py</code> on the full 100K candidate pool:</div>
+      <div class="code-block">python rank.py --candidates candidates.jsonl --out submission.csv</div>
+      <div class="code-block" style="margin-top:8px;color:#9090cc;"># Gzipped input also supported:
+python rank.py --candidates candidates.jsonl.gz --out submission.csv</div>
+    </div>
+
+    <div class="export-section">
+      <div class="export-title">Validate before submitting</div>
+      <div class="code-block">python validate_submission.py submission.csv</div>
+    </div>
+
+    <div class="export-section">
+      <div class="export-title">Streamlit dashboard</div>
+      <div class="export-sub">Run the interactive Streamlit app for full analysis:</div>
+      <div class="code-block">pip install streamlit pandas numpy tqdm
+streamlit run app.py</div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+// ── DATA ──
+const DATA = [{"candidate_id":"CAND_0000031","score":0.632712,"reasoning":"6.0yr Recommendation Systems Engineer at Swiggy (5001-10000); FAISS+Pinecone+Embeddings. Based in Hyderabad, Telangana; last active ~5wk ago, production signal: 'shipped', open to work, 60d notice.","title":"Recommendation Systems Engineer","company":"Swiggy","company_size":"5001-10000","location":"Hyderabad, Telangana","yoe":6.0,"open_to_work":true,"notice_days":60,"github_score":32.6,"days_ago":35,"top_skills":["Embeddings","Pinecone","Hugging Face Transformers","Sentence Transformers","Information Retrieval"],"c_skills":0.134,"c_career":0.875,"c_exp":1.0,"c_loc":0.92,"c_edu":0.75,"c_behav":1.0,"is_honeypot":false,"rank":1},{"candidate_id":"CAND_0000038","score":0.557824,"reasoning":"6.7yr Java Developer at Swiggy (5001-10000); Weaviate. Based in Coimbatore, Tamil Nadu; last active ~12wk ago, production signal: 'built', open to work, 90d notice.","title":"Java Developer","company":"Swiggy","company_size":"5001-10000","location":"Coimbatore, Tamil Nadu","yoe":6.7,"open_to_work":true,"notice_days":90,"github_score":37.8,"days_ago":89,"top_skills":["Weaviate","Agile","Azure","GraphQL","MLOps"],"c_skills":0.025,"c_career":0.844,"c_exp":1.0,"c_loc":0.72,"c_edu":0.5,"c_behav":1.03,"is_honeypot":false,"rank":2},{"candidate_id":"CAND_0000001","score":0.511133,"reasoning":"6.9yr Backend Engineer at Mindtree (10001+); NLP+Fine-tuning LLMs+Milvus. Based in Toronto; last active ~5wk ago, production signal: 'built', open to work, 60d notice.","title":"Backend Engineer","company":"Mindtree","company_size":"10001+","location":"Toronto","yoe":6.9,"open_to_work":true,"notice_days":60,"github_score":9.2,"days_ago":39,"top_skills":["TTS","Speech Recognition","Milvus","NLP","Fine-tuning LLMs"],"c_skills":0.058,"c_career":0.594,"c_exp":1.0,"c_loc":0.44,"c_edu":0.6,"c_behav":1.081,"is_honeypot":false,"rank":3},{"candidate_id":"CAND_0000025","score":0.442011,"reasoning":"7.3yr Frontend Engineer at Tech Mahindra (10001+); LangChain. Based in Vizag, Andhra Pradesh; inactive 90d, production signal: 'production', open to work, 120d notice.","title":"Frontend Engineer","company":"Tech Mahindra","company_size":"10001+","location":"Vizag, Andhra Pradesh","yoe":7.3,"open_to_work":true,"notice_days":120,"github_score":-1,"days_ago":90,"top_skills":["LangChain","JavaScript","Data Pipelines","Apache Flink","Spark"],"c_skills":0.025,"c_career":0.594,"c_exp":1.0,"c_loc":0.42,"c_edu":0.3,"c_behav":1.03,"is_honeypot":false,"rank":4},{"candidate_id":"CAND_0000048","score":0.429888,"reasoning":"9.7yr Mobile Developer at CRED (1001-5000); Hadoop+Terraform. Based in Hyderabad, Telangana; last active ~11wk ago, production signal: 'built', open to work, 120d notice.","title":"Mobile Developer","company":"CRED","company_size":"1001-5000","location":"Hyderabad, Telangana","yoe":9.7,"open_to_work":true,"notice_days":120,"github_score":-1,"days_ago":83,"top_skills":["Terraform","Content Writing","Vue.js","AWS","Hadoop"],"c_skills":0.0,"c_career":0.875,"c_exp":0.65,"c_loc":0.72,"c_edu":0.85,"c_behav":0.85,"is_honeypot":false,"rank":5},{"candidate_id":"CAND_0000015","score":0.421441,"reasoning":"5.4yr Software Engineer at Razorpay (1001-5000); Qdrant. Based in Trivandrum, Kerala; inactive 136d, production signal: 'production', open to work, 90d notice.","title":"Software Engineer","company":"Razorpay","company_size":"1001-5000","location":"Trivandrum, Kerala","yoe":5.4,"open_to_work":true,"notice_days":90,"github_score":-1,"days_ago":136,"top_skills":["Qdrant","Sales","Next.js","PyTorch","SEO"],"c_skills":0.015,"c_career":0.969,"c_exp":0.85,"c_loc":0.54,"c_edu":0.4,"c_behav":0.824,"is_honeypot":false,"rank":6},{"candidate_id":"CAND_0000014","score":0.414363,"reasoning":"8.4yr Frontend Engineer at Zomato (5001-10000); FAISS. Based in Hyderabad, Telangana; last active ~11wk ago, production signal: 'built', not open, 90d notice.","title":"Frontend Engineer","company":"Zomato","company_size":"5001-10000","location":"Hyderabad, Telangana","yoe":8.4,"open_to_work":false,"notice_days":90,"github_score":-1,"days_ago":77,"top_skills":["OpenSearch","FAISS","OpenCV","GANs","YOLO"],"c_skills":0.033,"c_career":0.844,"c_exp":0.85,"c_loc":0.84,"c_edu":0.6,"c_behav":0.772,"is_honeypot":false,"rank":7},{"candidate_id":"CAND_0000023","score":0.331524,"reasoning":"3.7yr Software Engineer at Acme Corp (201-500); BigQuery+Marketing. Based in New York; last active ~11wk ago, production signal: 'built', not open, 30d notice.","title":"Software Engineer","company":"Acme Corp","company_size":"201-500","location":"New York","yoe":3.7,"open_to_work":false,"notice_days":30,"github_score":48.5,"days_ago":83,"top_skills":["Node.js","Rust","Marketing","Django","ETL"],"c_skills":0.002,"c_career":0.844,"c_exp":0.3,"c_loc":0.52,"c_edu":0.85,"c_behav":0.811,"is_honeypot":false,"rank":8},{"candidate_id":"CAND_0000007","score":0.331122,"reasoning":"5.5yr Civil Engineer at Wipro (10001+); Content Writing+MongoDB. Based in Gurgaon, Haryana; last active ~4wk ago, production signal: 'production', not open, 30d notice.","title":"Civil Engineer","company":"Wipro","company_size":"10001+","location":"Gurgaon, Haryana","yoe":5.5,"open_to_work":false,"notice_days":30,"github_score":-1,"days_ago":34,"top_skills":["MongoDB","Sales","Spark","Illustrator","Content Writing"],"c_skills":0.002,"c_career":0.594,"c_exp":0.85,"c_loc":1.0,"c_edu":0.85,"c_behav":0.657,"is_honeypot":false,"rank":9},{"candidate_id":"CAND_0000035","score":0.316503,"reasoning":"4.3yr Full Stack Developer at Globex Inc (501-1000); Snowflake+BigQuery. Based in Hyderabad, Telangana; inactive 142d, production signal: 'built', not open, 60d notice.","title":"Full Stack Developer","company":"Globex Inc","company_size":"501-1000","location":"Hyderabad, Telangana","yoe":4.3,"open_to_work":false,"notice_days":60,"github_score":-1,"days_ago":142,"top_skills":["BentoML","Next.js","PostgreSQL","Kafka","Snowflake"],"c_skills":0.01,"c_career":0.906,"c_exp":0.65,"c_loc":0.92,"c_edu":0.6,"c_behav":0.618,"is_honeypot":false,"rank":10},{"candidate_id":"CAND_0000010","score":0.312559,"reasoning":"4.6yr Data Engineer at Ola (5001-10000); Python. Based in London; last active ~8wk ago, production signal: 'built', not open, 120d notice.","title":"Data Engineer","company":"Ola","company_size":"5001-10000","location":"London","yoe":4.6,"open_to_work":false,"notice_days":120,"github_score":33.7,"days_ago":60,"top_skills":["GANs","Object Detection","BM25","Prompt Engineering","Weights & Biases"],"c_skills":0.021,"c_career":0.812,"c_exp":0.65,"c_loc":0.24,"c_edu":0.4,"c_behav":0.772,"is_honeypot":false,"rank":11},{"candidate_id":"CAND_0000022","score":0.309666,"reasoning":"1.1yr Mechanical Engineer at Hooli (1001-5000); OpenCV+Django. Based in Sydney; last active ~8wk ago, production signal: 'production', open to work, 150d notice.","title":"Mechanical Engineer","company":"Hooli","company_size":"1001-5000","location":"Sydney","yoe":1.1,"open_to_work":true,"notice_days":150,"github_score":-1,"days_ago":56,"top_skills":["Terraform","Scrum","AWS","SQL","OpenCV"],"c_skills":0.0,"c_career":0.781,"c_exp":0.3,"c_loc":0.24,"c_edu":0.85,"c_behav":0.85,"is_honeypot":false,"rank":12},{"candidate_id":"CAND_0000016","score":0.302118,"reasoning":"5.3yr Accountant at Infosys (10001+); Node.js+Figma. Based in Gurgaon, Haryana; inactive 189d, production signal: 'built', open to work, 60d notice.","title":"Accountant","company":"Infosys","company_size":"10001+","location":"Gurgaon, Haryana","yoe":5.3,"open_to_work":true,"notice_days":60,"github_score":42.9,"days_ago":189,"top_skills":["Kubeflow","SQL","Photoshop","Accounting","Figma"],"c_skills":0.01,"c_career":0.656,"c_exp":0.85,"c_loc":0.92,"c_edu":0.5,"c_behav":0.63,"is_honeypot":false,"rank":13},{"candidate_id":"CAND_0000019","score":0.298011,"reasoning":"6.5yr Project Manager at Wayne Enterprises (10001+); Figma+GraphQL. Based in Trivandrum, Kerala; last active ~5wk ago, production signal: 'production', not open, 60d notice.","title":"Project Manager","company":"Wayne Enterprises","company_size":"10001+","location":"Trivandrum, Kerala","yoe":6.5,"open_to_work":false,"notice_days":60,"github_score":-1,"days_ago":38,"top_skills":["Figma","AWS","YOLO","Azure","Scrum"],"c_skills":0.0,"c_career":0.422,"c_exp":1.0,"c_loc":0.62,"c_edu":1.0,"c_behav":0.637,"is_honeypot":false,"rank":14},{"candidate_id":"CAND_0000049","score":0.291873,"reasoning":"11.8yr Mechanical Engineer at Wayne Enterprises (10001+); TypeScript+Rust. Based in Berlin; last active ~6wk ago, production signal: 'built', not open, 120d notice.","title":"Mechanical Engineer","company":"Wayne Enterprises","company_size":"10001+","location":"Berlin","yoe":11.8,"open_to_work":false,"notice_days":120,"github_score":-1,"days_ago":46,"top_skills":["GraphQL","Kubernetes","Rust","Apache Beam","Data Pipelines"],"c_skills":0.006,"c_career":0.812,"c_exp":0.5,"c_loc":0.24,"c_edu":0.6,"c_behav":0.75,"is_honeypot":false,"rank":15},{"candidate_id":"CAND_0000005","score":0.291187,"reasoning":"11.0yr Accountant at Stark Industries (1001-5000); SQL+PowerPoint. Based in Gurgaon, Haryana; inactive 270d, production signal: 'built', open to work, 30d notice.","title":"Accountant","company":"Stark Industries","company_size":"1001-5000","location":"Gurgaon, Haryana","yoe":11.0,"open_to_work":true,"notice_days":30,"github_score":-1,"days_ago":270,"top_skills":["Image Classification","Tailwind","Apache Flink","SQL","PowerPoint"],"c_skills":0.0,"c_career":0.781,"c_exp":0.65,"c_loc":1.0,"c_edu":0.6,"c_behav":0.6,"is_honeypot":false,"rank":16},{"candidate_id":"CAND_0000027","score":0.291085,"reasoning":"3.9yr DevOps Engineer at Infosys (10001+); Information Retrieval. Based in Kolkata, West Bengal; last active ~7wk ago, production signal: 'built', open to work, 90d notice.","title":"DevOps Engineer","company":"Infosys","company_size":"10001+","location":"Kolkata, West Bengal","yoe":3.9,"open_to_work":true,"notice_days":90,"github_score":38.6,"days_ago":52,"top_skills":["PEFT","YOLO","Weights & Biases","Data Science","Terraform"],"c_skills":0.015,"c_career":0.287,"c_exp":0.3,"c_loc":0.54,"c_edu":1.0,"c_behav":1.0,"is_honeypot":false,"rank":17},{"candidate_id":"CAND_0000046","score":0.285402,"reasoning":"7.8yr Mechanical Engineer at Hooli (1001-5000); Agile+Scrum. Based in London; inactive 128d, production signal: 'built', not open, 30d notice.","title":"Mechanical Engineer","company":"Hooli","company_size":"1001-5000","location":"London","yoe":7.8,"open_to_work":false,"notice_days":30,"github_score":20.9,"days_ago":128,"top_skills":["Scrum","SAP","Azure","React","ETL"],"c_skills":0.0,"c_career":0.781,"c_exp":1.0,"c_loc":0.88,"c_edu":0.6,"c_behav":0.525,"is_honeypot":false,"rank":18},{"candidate_id":"CAND_0000045","score":0.279544,"reasoning":"12.2yr Project Manager at Initech (51-200); GCP+Sales. Based in Indore, Madhya Pradesh; last active ~9wk ago, production signal: 'production', open to work, 60d notice.","title":"Project Manager","company":"Initech","company_size":"51-200","location":"Indore, Madhya Pradesh","yoe":12.2,"open_to_work":true,"notice_days":60,"github_score":-1,"days_ago":65,"top_skills":["Redux","SAP","Airflow","Sales","PostgreSQL"],"c_skills":0.0,"c_career":0.317,"c_exp":0.5,"c_loc":0.8,"c_edu":0.6,"c_behav":0.875,"is_honeypot":false,"rank":19},{"candidate_id":"CAND_0000006","score":0.270694,"reasoning":"6.0yr Business Analyst at Wayne Enterprises (10001+); Content Writing+SEO. Based in Austin; inactive 120d, production signal: 'built', not open, 150d notice.","title":"Business Analyst","company":"Wayne Enterprises","company_size":"10001+","location":"Austin","yoe":6.0,"open_to_work":false,"notice_days":150,"github_score":-1,"days_ago":120,"top_skills":["SEO","Sales","Django","Content Writing","Redux"],"c_skills":0.0,"c_career":0.781,"c_exp":1.0,"c_loc":0.6,"c_edu":0.6,"c_behav":0.525,"is_honeypot":false,"rank":20},{"candidate_id":"CAND_0000043","score":0.26953,"reasoning":"8.3yr Cloud Engineer at Swiggy (5001-10000); Fine-tuning LLMs+LangChain. Based in Chandigarh, Chandigarh; inactive 178d, production signal: 'built', not open, 120d notice.","title":"Cloud Engineer","company":"Swiggy","company_size":"5001-10000","location":"Chandigarh, Chandigarh","yoe":8.3,"open_to_work":false,"notice_days":120,"github_score":-1,"days_ago":178,"top_skills":["Elasticsearch","OpenCV","Image Classification","Kubeflow","Haystack"],"c_skills":0.053,"c_career":0.938,"c_exp":0.85,"c_loc":0.6,"c_edu":0.3,"c_behav":0.525,"is_honeypot":false,"rank":21},{"candidate_id":"CAND_0000013","score":0.268291,"reasoning":"1.1yr Civil Engineer at Globex Inc (501-1000); React+Redux. Based in Dubai; inactive 94d, production signal: 'built', open to work, 30d notice.","title":"Civil Engineer","company":"Globex Inc","company_size":"501-1000","location":"Dubai","yoe":1.1,"open_to_work":true,"notice_days":30,"github_score":35.6,"days_ago":94,"top_skills":["Flask","Redux","Spark","Data Pipelines","React"],"c_skills":0.006,"c_career":0.781,"c_exp":0.3,"c_loc":0.52,"c_edu":0.85,"c_behav":0.68,"is_honeypot":false,"rank":22},{"candidate_id":"CAND_0000009","score":0.266088,"reasoning":"11.0yr Mechanical Engineer at Dunder Mifflin (201-500); Snowflake+gRPC. Based in New York; inactive 152d, production signal: 'built', not open, 150d notice.","title":"Mechanical Engineer","company":"Dunder Mifflin","company_size":"201-500","location":"New York","yoe":11.0,"open_to_work":false,"notice_days":150,"github_score":-1,"days_ago":152,"top_skills":["OpenCV","Go","Snowflake","PowerPoint","JavaScript"],"c_skills":0.0,"c_career":0.906,"c_exp":0.65,"c_loc":0.24,"c_edu":0.5,"c_behav":0.618,"is_honeypot":false,"rank":23},{"candidate_id":"CAND_0000033","score":0.260878,"reasoning":"8.6yr Graphic Designer at Wipro (10001+); Kubernetes+Data Pipelines. Based in Pune, Maharashtra; inactive 93d, production signal: 'built', open to work, 30d notice.","title":"Graphic Designer","company":"Wipro","company_size":"10001+","location":"Pune, Maharashtra","yoe":8.6,"open_to_work":true,"notice_days":30,"github_score":38.3,"days_ago":93,"top_skills":["TypeScript","Content Writing","Snowflake","CI/CD","Airflow"],"c_skills":0.002,"c_career":0.562,"c_exp":0.85,"c_loc":1.0,"c_edu":0.4,"c_behav":0.578,"is_honeypot":false,"rank":24},{"candidate_id":"CAND_0000018","score":0.256498,"reasoning":"6.6yr Frontend Engineer at Acme Corp (201-500); CNN+Java. Based in Bhubaneswar, Odisha; inactive 130d, production signal: 'built', not open, 120d notice.","title":"Frontend Engineer","company":"Acme Corp","company_size":"201-500","location":"Bhubaneswar, Odisha","yoe":6.6,"open_to_work":false,"notice_days":120,"github_score":-1,"days_ago":130,"top_skills":["CNN","Java","Accounting","Node.js","Tailwind"],"c_skills":0.0,"c_career":0.844,"c_exp":1.0,"c_loc":0.42,"c_edu":0.5,"c_behav":0.51,"is_honeypot":false,"rank":25},{"candidate_id":"CAND_0000039","score":0.236688,"reasoning":"3.9yr Marketing Manager at Acme Corp (201-500); Spark+Tailwind. Based in Bhubaneswar, Odisha; last active ~10wk ago, production signal: 'production', not open, 30d notice.","title":"Marketing Manager","company":"Acme Corp","company_size":"201-500","location":"Bhubaneswar, Odisha","yoe":3.9,"open_to_work":false,"notice_days":30,"github_score":-1,"days_ago":71,"top_skills":["Hadoop","Microservices","CI/CD","Spark","Tailwind"],"c_skills":0.006,"c_career":0.422,"c_exp":0.3,"c_loc":0.88,"c_edu":0.6,"c_behav":0.75,"is_honeypot":false,"rank":26},{"candidate_id":"CAND_0000011","score":0.235072,"reasoning":"2.0yr QA Engineer at Pied Piper (11-50); Hugging Face Transformers. Based in Hyderabad, Telangana; inactive 160d, production signal: 'production', not open, 90d notice.","title":"QA Engineer","company":"Pied Piper","company_size":"11-50","location":"Hyderabad, Telangana","yoe":2.0,"open_to_work":false,"notice_days":90,"github_score":32.3,"days_ago":160,"top_skills":["Kubeflow","Recommendation Systems","Spring Boot","PostgreSQL","Hugging Face Transformers"],"c_skills":0.022,"c_career":0.844,"c_exp":0.3,"c_loc":0.84,"c_edu":0.85,"c_behav":0.525,"is_honeypot":false,"rank":27},{"candidate_id":"CAND_0000041","score":0.234041,"reasoning":"13.7yr Operations Manager at Hooli (1001-5000); Airflow+SQL. Based in Delhi, Delhi; inactive 104d, production signal: 'built', open to work, 90d notice.","title":"Operations Manager","company":"Hooli","company_size":"1001-5000","location":"Delhi, Delhi","yoe":13.7,"open_to_work":true,"notice_days":90,"github_score":-1,"days_ago":104,"top_skills":["React","Airflow","SQL","Angular","Figma"],"c_skills":0.002,"c_career":0.438,"c_exp":0.5,"c_loc":0.84,"c_edu":0.4,"c_behav":0.7,"is_honeypot":false,"rank":28},{"candidate_id":"CAND_0000020","score":0.229781,"reasoning":"6.3yr Mechanical Engineer at Wipro (10001+); GraphQL+TypeScript. Based in Ahmedabad, Gujarat; inactive 266d, production signal: 'built', not open, 30d notice.","title":"Mechanical Engineer","company":"Wipro","company_size":"10001+","location":"Ahmedabad, Gujarat","yoe":6.3,"open_to_work":false,"notice_days":30,"github_score":-1,"days_ago":266,"top_skills":["Weights & Biases","GCP","HTML","GraphQL","Flask"],"c_skills":0.0,"c_career":0.562,"c_exp":1.0,"c_loc":0.7,"c_edu":1.0,"c_behav":0.45,"is_honeypot":false,"rank":29},{"candidate_id":"CAND_0000024","score":0.228027,"reasoning":"7.5yr HR Manager at TCS (10001+); Figma+Kubernetes. Based in Trivandrum, Kerala; inactive 159d, production signal: 'built', not open, 60d notice.","title":"HR Manager","company":"TCS","company_size":"10001+","location":"Trivandrum, Kerala","yoe":7.5,"open_to_work":false,"notice_days":60,"github_score":46.3,"days_ago":159,"top_skills":["Forecasting","ETL","Node.js","Figma","Kubernetes"],"c_skills":0.005,"c_career":0.081,"c_exp":1.0,"c_loc":0.8,"c_edu":0.6,"c_behav":0.63,"is_honeypot":false,"rank":30}];
+
+const MUST_HAVE = new Set(['embeddings','vector search','rag','nlp','faiss','pinecone','qdrant','milvus','weaviate','transformers','fine-tuning','llm','llms','sentence transformers','information retrieval','hugging face transformers','langchain','milvus','bm25','haystack','recommendation systems']);
+
+let activeFilters = { open: false, india: false };
+let expandedCard = null;
+
+// ── Render cards ──
+function renderCards(data) {
+  const list = document.getElementById('card-list');
+  list.innerHTML = '';
+  document.getElementById('result-count').textContent = data.length + ' candidate' + (data.length!==1?'s':'');
+
+  data.forEach(c => {
+    const pct = Math.round(c.score * 100);
+    const badgeCls = c.score >= 0.5 ? 'badge-high' : c.score >= 0.3 ? 'badge-mid' : 'badge-low';
+    const barH = Math.round(c.score * 44);
+
+    const skillsHtml = c.top_skills.map(s => {
+      const isMust = MUST_HAVE.has(s.toLowerCase());
+      return `<span class="skill-tag${isMust?' match':''}">${s}</span>`;
+    }).join('');
+
+    const otw = c.open_to_work ? '<span class="signal"><span class="signal-dot green"></span>Open</span>' : '<span class="signal"><span class="signal-dot"></span>Closed</span>';
+    const notice = `<span class="signal"><span class="signal-dot ${c.notice_days<=30?'green':c.notice_days<=60?'yellow':'red'}"></span>${c.notice_days}d notice</span>`;
+    const gh = c.github_score >= 0 ? `<span class="signal"><span class="signal-dot ${c.github_score>70?'green':c.github_score>40?'yellow':''}"></span>GH ${c.github_score.toFixed(0)}</span>` : '';
+    const inactive = c.days_ago <= 7 ? `<span class="signal"><span class="signal-dot green"></span>Active ${c.days_ago}d ago</span>` : c.days_ago <= 30 ? `<span class="signal"><span class="signal-dot yellow"></span>${c.days_ago}d ago</span>` : `<span class="signal"><span class="signal-dot red"></span>${c.days_ago}d inactive</span>`;
+
+    // Component breakdown
+    const comps = [
+      { label:'Skills', weight:'35%', val:c.c_skills, color:'#5b5bff' },
+      { label:'Career', weight:'25%', val:c.c_career, color:'#9b5cf6' },
+      { label:'Exp', weight:'20%', val:c.c_exp, color:'#06b6d4' },
+      { label:'Location', weight:'10%', val:c.c_loc, color:'#10b981' },
+      { label:'Education', weight:'10%', val:c.c_edu, color:'#f59e0b' },
+      { label:'×Behav', weight:'mult', val:c.c_behav, color:'#ef4444' },
+    ];
+    const compHtml = comps.map(cp => `
+      <div class="comp-item">
+        <div class="comp-label">${cp.label}</div>
+        <div class="comp-val" style="color:${cp.color}">${cp.val.toFixed(2)}</div>
+        <div class="comp-weight">${cp.weight}</div>
+        <div class="comp-bar"><div class="comp-bar-fill" style="width:${Math.round(Math.min(cp.val,1)*100)}%;background:${cp.color}"></div></div>
+      </div>`).join('');
+
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.dataset.id = c.candidate_id;
+    div.innerHTML = `
+      <div class="rank-col">
+        <span class="rank-num">#${c.rank}</span>
+        <div class="rank-bar-wrap"><div class="rank-bar-fill" style="height:${barH}px"></div></div>
+      </div>
+      <div class="card-body">
+        <div class="card-row1">
+          <span class="card-title">${c.title}</span>
+          <span class="card-meta">· ${c.yoe}yr</span>
+          <span class="card-company">@ ${c.company} (${c.company_size})</span>
+          <span class="card-meta">· ${c.location}</span>
+        </div>
+        <div class="skills-row">${skillsHtml}</div>
+        <div class="score-bar-wrap"><div class="score-bar-fill" style="width:${pct}%"></div></div>
+        <div class="signal-row">${otw}${notice}${gh}${inactive}</div>
+        <div class="reasoning-text">${c.reasoning}</div>
+        <div class="component-breakdown">
+          <div class="comp-grid">${compHtml}</div>
+          <div style="margin-top:10px;font-size:11px;color:var(--faint);font-family:var(--mono)">${c.candidate_id}</div>
+        </div>
+      </div>
+      <div>
+        <span class="score-badge ${badgeCls}">${c.score.toFixed(4)}</span>
+      </div>
+    `;
+    div.addEventListener('click', () => {
+      if (expandedCard && expandedCard !== div) expandedCard.classList.remove('expanded');
+      div.classList.toggle('expanded');
+      expandedCard = div.classList.contains('expanded') ? div : null;
+    });
+    list.appendChild(div);
+  });
+}
+
+// ── Filters ──
+function filterCards(query) {
+  const q = query.toLowerCase();
+  const filtered = DATA.filter(c => {
+    const text = `${c.title} ${c.company} ${c.location} ${c.top_skills.join(' ')}`.toLowerCase();
+    const matchQ = !q || text.includes(q);
+    const matchOpen = !activeFilters.open || c.open_to_work;
+    const matchIndia = !activeFilters.india || c.location.toLowerCase().includes('india') ||
+      ['hyderabad','pune','bangalore','bengaluru','noida','gurgaon','gurugram','delhi','mumbai','trivandrum','kolkata','chandigarh','indore','ahmedabad','bhubaneswar','vizag','coimbatore'].some(city => c.location.toLowerCase().includes(city));
+    return matchQ && matchOpen && matchIndia;
+  });
+  renderCards(filtered);
+}
+
+function toggleFilter(key) {
+  activeFilters[key] = !activeFilters[key];
+  document.getElementById('btn-' + key).classList.toggle('active', activeFilters[key]);
+  filterCards(document.querySelector('.search-input').value);
+}
+
+// ── Tab switching ──
+function switchTab(name, el) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('pane-' + name).classList.add('active');
+  el.classList.add('active');
+}
+
+// ── Analytics charts ──
+function buildAnalytics() {
+  // Score distribution (10 buckets 0-1)
+  const buckets = new Array(10).fill(0);
+  DATA.forEach(c => { const b = Math.min(9, Math.floor(c.score * 10)); buckets[b]++; });
+  const maxB = Math.max(...buckets);
+  const scoreChart = document.getElementById('score-dist-chart');
+  buckets.forEach((v, i) => {
+    const col = document.createElement('div');
+    col.className = 'bar-col';
+    col.innerHTML = `<div class="bar" style="height:${v?Math.round(v/maxB*70)+10:2}px" title="${v} candidates"></div>
+      <div class="bar-label">${(i/10).toFixed(1)}</div>`;
+    scoreChart.appendChild(col);
+  });
+
+  // Companies
+  const companies = {};
+  DATA.forEach(c => { companies[c.company] = (companies[c.company]||0) + 1; });
+  const topCo = Object.entries(companies).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxCo = topCo[0][1];
+  const coChart = document.getElementById('company-chart');
+  topCo.forEach(([co, n]) => {
+    coChart.innerHTML += `<div class="h-bar-row">
+      <div class="h-bar-label">${co}</div>
+      <div class="h-bar-track"><div class="h-bar-fill" style="width:${Math.round(n/maxCo*100)}%"></div></div>
+      <div class="h-bar-val">${n}</div>
+    </div>`;
+  });
+
+  // Components
+  const comps = [
+    ['Skills (35%)', DATA.reduce((s,c)=>s+c.c_skills,0)/DATA.length],
+    ['Career (25%)', DATA.reduce((s,c)=>s+c.c_career,0)/DATA.length],
+    ['Exp (20%)', DATA.reduce((s,c)=>s+c.c_exp,0)/DATA.length],
+    ['Location (10%)', DATA.reduce((s,c)=>s+c.c_loc,0)/DATA.length],
+    ['Education (10%)', DATA.reduce((s,c)=>s+c.c_edu,0)/DATA.length],
+    ['Behav ×', DATA.reduce((s,c)=>s+c.c_behav,0)/DATA.length],
+  ];
+  const maxComp = Math.max(...comps.map(c=>c[1]));
+  const compChart = document.getElementById('component-chart');
+  comps.forEach(([label, v]) => {
+    compChart.innerHTML += `<div class="h-bar-row">
+      <div class="h-bar-label">${label}</div>
+      <div class="h-bar-track"><div class="h-bar-fill" style="width:${Math.round(v/maxComp*100)}%"></div></div>
+      <div class="h-bar-val">${v.toFixed(2)}</div>
+    </div>`;
+  });
+
+  // Notice period
+  const noticeBuckets = {'0-30':0,'31-60':0,'61-90':0,'91-120':0,'120+':0};
+  DATA.forEach(c => {
+    if(c.notice_days<=30) noticeBuckets['0-30']++;
+    else if(c.notice_days<=60) noticeBuckets['31-60']++;
+    else if(c.notice_days<=90) noticeBuckets['61-90']++;
+    else if(c.notice_days<=120) noticeBuckets['91-120']++;
+    else noticeBuckets['120+']++;
+  });
+  const maxN = Math.max(...Object.values(noticeBuckets));
+  const noticeChart = document.getElementById('notice-chart');
+  Object.entries(noticeBuckets).forEach(([label, v]) => {
+    const col = document.createElement('div');
+    col.className = 'bar-col';
+    col.innerHTML = `<div class="bar" style="height:${v?Math.round(v/maxN*70)+10:2}px;background:${v/maxN>0.5?'var(--green)':'linear-gradient(180deg,var(--accent),var(--accent2))'}" title="${v} candidates"></div>
+      <div class="bar-label">${label}</div>`;
+    noticeChart.appendChild(col);
+  });
+
+  // OTW
+  const otwGroups = {'Open+India':0,'Open+Abroad':0,'Closed+India':0,'Closed+Abroad':0};
+  const INDIA_CITIES = new Set(['hyderabad','pune','bangalore','bengaluru','noida','gurgaon','gurugram','delhi','mumbai','trivandrum','kolkata','chandigarh','indore','ahmedabad','bhubaneswar','vizag','coimbatore']);
+  DATA.forEach(c => {
+    const inIndia = INDIA_CITIES.has(c.location.toLowerCase().split(',')[0].trim());
+    const key = `${c.open_to_work?'Open':'Closed'}+${inIndia?'India':'Abroad'}`;
+    otwGroups[key]++;
+  });
+  const maxOtw = Math.max(...Object.values(otwGroups));
+  const otwChart = document.getElementById('otw-chart');
+  const otwColors = {'Open+India':'var(--green)','Open+Abroad':'#34d399aa','Closed+India':'var(--yellow)','Closed+Abroad':'var(--red)'};
+  Object.entries(otwGroups).forEach(([label, v]) => {
+    const col = document.createElement('div');
+    col.className = 'bar-col';
+    col.innerHTML = `<div class="bar" style="height:${v?Math.round(v/maxOtw*70)+10:2}px;background:${otwColors[label]}" title="${v} candidates"></div>
+      <div class="bar-label">${label.replace('+',' / ')}</div>`;
+    otwChart.appendChild(col);
+  });
+}
+
+// ── CSV download ──
+function downloadCSV() {
+  const rows = [['candidate_id','rank','score','reasoning']];
+  DATA.slice(0,30).forEach(c => {
+    rows.push([c.candidate_id, c.rank, c.score.toFixed(6), `"${c.reasoning.replace(/"/g,'""')}"`]);
+  });
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'submission.csv';
+  a.click();
+}
+
+// ── Init ──
+renderCards(DATA);
+buildAnalytics();
+</script>
+</body>
+</html>
